@@ -163,14 +163,14 @@ class WrapProxyWriter(WrapFS):
         if _mode.exclusive and self.exists(_path):
             raise errors.FileExists(path)
 
-        if not _mode.writing:
+        if not _mode.create:
             if not self.exists(_path):
                 raise errors.ResourceNotFound(path)
 
             if not self._proxy.exists(_path):
                 return self.delegate_fs().openbin(_path, mode, buffering, **options)
 
-        elif _mode.appending or _mode.updating:
+        elif not _mode.truncate:
             if self._on_wrapped_only(_path):
                 self._relocate(_path)
 
@@ -251,17 +251,16 @@ class WrapSwapProxyWriter(WrapProxyWriter):
         the intial proxy and the swapped proxy instead of always
         using the swapped proxy after the swap.
 
-        Fix the _swap causing things to crash.
-
     """
     MEMORY_USAGE_LIMIT = psutil.virtual_memory().total / 2
 
     def __init__(self, wrap_fs=None, swap_fs=None, close=True):
         super(WrapSwapProxyWriter, self).__init__(
             wrap_fs or MemoryFS(),
-            proxy=MemoryFS()
+            proxy=MemoryFS(),
+            close=close,
         )
-        self._swap_fs = open_fs(proxy or 'temp://__swap__', writeable=True)
+        self._swap_fs = open_fs(swap_fs or 'temp://__swap__', writeable=True)
 
     @property
     def memory_usage(self):
@@ -272,13 +271,13 @@ class WrapSwapProxyWriter(WrapProxyWriter):
             memory_usage += info.size or 0
         return memory_usage
 
-    def _relocate(self, path):
-        super(WrapSwapProxyWriter, self)._relocate(path)
+    def check(self):
+        super(WrapSwapProxyWriter, self).check()
 
         if self.memory_usage > self.MEMORY_USAGE_LIMIT:
-            self._swap()
+            self.swap()
 
-    def _swap(self):
+    def swap(self):
         """Replace the current proxy with the backup proxy.
 
         The in-memory proxy filesystem is closed after the copy.
@@ -288,3 +287,11 @@ class WrapSwapProxyWriter(WrapProxyWriter):
             copy_fs(_proxy, self._proxy)
             _proxy.close()
             del _proxy
+
+    def close(self):
+        if not self.isclosed():
+            super(WrapProxyWriter, self).close()
+            self._proxy.close()
+            self._swap_fs.close()
+            if self._close_ro:
+                self.delegate_fs().close()

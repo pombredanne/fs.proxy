@@ -6,3 +6,8 @@ try:
     from tlz import itertoolz
 except ImportError:
     itertoolz = None
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock

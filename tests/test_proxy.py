@@ -11,8 +11,10 @@ import unittest
 import fs.test
 import fs.wrap
 import fs.memoryfs
+import fs.tempfs
 import fs.archive._proxy
 
+from .utils import mock
 
 
 class TestWrapProxyWriter(fs.test.FSTestCases, unittest.TestCase):
@@ -96,3 +98,23 @@ class TestWrapProxyWriter(fs.test.FSTestCases, unittest.TestCase):
         fs.close()
         del fs.mem
         del fs
+
+
+
+class TestWrapSwapProxyWriter(TestWrapProxyWriter, unittest.TestCase):
+
+    def make_fs(self):
+        mem = fs.memoryfs.MemoryFS()
+        f = fs.archive._proxy.WrapSwapProxyWriter(fs.wrap.WrapReadOnly(mem))
+        f.mem = mem
+        return f
+
+    def test_swap(self):
+        self.assertIsInstance(self.fs._proxy, fs.memoryfs.MemoryFS)
+        self.assertIsInstance(self.fs._swap_fs, fs.tempfs.TempFS)
+
+        with mock.patch.object(self.fs, 'MEMORY_USAGE_LIMIT', 512):
+            self.fs.setbytes('foo.txt', b'a'*1024)
+            self.fs.listdir('/')
+
+        self.assertIs(self.fs._proxy, self.fs._swap_fs)

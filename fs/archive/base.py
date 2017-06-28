@@ -131,7 +131,7 @@ class ArchiveFS(WrapProxyWriter):
         else:
             self._saver = None
 
-        super(ArchiveFS, self).__init__(read_only, proxy=proxy)
+        super(ArchiveFS, self).__init__(read_only, proxy)
 
     def close(self):
         if not self.isclosed():
