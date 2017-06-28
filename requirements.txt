@@ -1,0 +1,3 @@
+fs>=2.0.4
+six
+psutil
