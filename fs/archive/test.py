@@ -21,15 +21,16 @@ from fs.test import UNICODE_TEXT
 from fs.archive import base
 
 
+
 @six.add_metaclass(abc.ABCMeta)
 class ArchiveReadTestCases(object):
 
-    @abc.abstractmethod
-    def compress(self, handle, fs):
-        pass
+    @abc.abstractproperty
+    def _archive_read_fs(self):
+        raise NotImplementedError
 
     @abc.abstractmethod
-    def load_archive(self, handle):
+    def compress(self, handle, fs):
         pass
 
     @abc.abstractmethod
@@ -48,11 +49,17 @@ class ArchiveReadTestCases(object):
         fs.makedir('unicode')
         fs.settext('unicode/text.txt', UNICODE_TEXT)
 
-    def setUp(self):
+    def setUp(self, handle):
+        self.handle = handle
         self.source_fs = source_fs = self.make_source_fs()
         self.build_source(source_fs)
         self.compress(self.handle, source_fs)
-        self.fs = self.load_archive(self.handle)
+        self.fs = self._archive_read_fs(self.handle)
+
+        self.assertIsInstance(
+            self.fs, base.ArchiveReadFS,
+            'load_archive did not return an ArchiveReadFS.'
+        )
 
     def tearDown(self):
         self.source_fs.close()
@@ -105,6 +112,9 @@ class ArchiveReadTestCases(object):
         top = self.fs.getinfo('top.txt', 'details')
         self.assertEqual(top.size, 12)
         self.assertFalse(top.is_dir)
+
+        with self.assertRaises(errors.ResourceNotFound):
+            _ = self.fs.getinfo('boom.txt')
 
     def test_listdir(self):
         self.assertEqual(
@@ -182,8 +192,9 @@ class ArchiveIOTestCases(object):
         raise NotImplementedError()
 
     def tearDown(self):
-        self.source_fs.close()
-        if hasattr(self.handle, 'close'):
+        if hasattr(self, 'source_fs'):
+            self.source_fs.close()
+        if hasattr(getattr(self, 'handle', None), 'close'):
             self.handle.close()
 
     def build_source(self, fs):
