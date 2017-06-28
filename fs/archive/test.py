@@ -9,17 +9,12 @@ import six
 import sys
 import tempfile
 
-# Have to use absolute imports in
-# case the module is not installed
-# locally (issue in import order,
-# as fs.archive.test is mistaken
-# for fs.test ?!)
-from fs import open_fs
-from fs import walk
-from fs import errors
-from fs.test import UNICODE_TEXT
-from fs.archive import base
+from .. import open_fs
+from .. import walk
+from .. import errors
+from ..test import UNICODE_TEXT
 
+from . import base
 
 
 @six.add_metaclass(abc.ABCMeta)
