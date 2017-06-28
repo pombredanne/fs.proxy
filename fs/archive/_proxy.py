@@ -21,13 +21,15 @@ from . import _utils
 
 
 class WrapProxyWriterMeta(abc.ABCMeta):
-    """Make class use ``FS`` method implementation regardless of their bases.
+    """Prevent the wrapped class from using ``WrapFS`` method implementations.
     """
 
     def __new__(cls, name, bases, attrs):
-        for k,v in vars(FS).items():
-            if callable(v):
-                attrs.setdefault(k, v)
+        for base in bases:
+            if base is not WrapFS:
+                for k,v in vars(base).items():
+                    if callable(v):
+                        attrs.setdefault(k, v)
         return super(WrapProxyWriterMeta, cls).__new__(cls, name, bases, attrs)
 
 
@@ -48,9 +50,23 @@ class WrapProxyWriter(WrapFS):
         self._removed = set()
         self._close_ro = close
 
-        self._meta = {
-            'invalid_path_chars': self.delegate_fs()._meta.get('invalid_path_chars', ('\0'))
-        }
+        self._meta = self.delegate_fs().getmeta().copy()
+        self._meta.setdefault('invalid_path_chars', '\0')
+        self._meta['read_only'] = False
+
+    def __repr__(self):
+        return "{}(r={!r}|w={!r})".format(
+            self.__class__.__name__,
+            self.delegate_fs(),
+            self._proxy
+        )
+
+    def __str__(self):
+        return "<{} '{}'>".format(
+            self.__class__.__name__.lower(),
+            self.delegate_fs()
+        )
+
 
     def _on_wrapped_only(self, path):
         """Return True if given ``path`` is present only on the wrapped FS.
