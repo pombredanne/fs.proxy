@@ -25,7 +25,8 @@ class WrapProxyWriterMeta(abc.ABCMeta):
     """
 
     def __new__(cls, name, bases, attrs):
-        for base in bases:
+        _bases = bases + (FS,)
+        for base in _bases:
             if base is not WrapFS:
                 for k,v in vars(base).items():
                     if callable(v):
@@ -66,7 +67,6 @@ class WrapProxyWriter(WrapFS):
             self.__class__.__name__.lower(),
             self.delegate_fs()
         )
-
 
     def _on_wrapped_only(self, path):
         """Return True if given ``path`` is present only on the wrapped FS.
