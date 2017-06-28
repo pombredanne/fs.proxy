@@ -8,15 +8,16 @@ import zipfile
 import tempfile
 import unittest
 
+from six.moves import filterfalse
+
 import fs.test
 import fs.wrap
 import fs.errors
 import fs.memoryfs
 import fs.archive.zipfs
 
-from fs.path import relpath, join, forcedir, abspath
-from fs.archive.test import ArchiveTestCases
-
+from fs.path import relpath, join, forcedir, abspath, recursepath
+from fs.archive.test import ArchiveReadTestCases, ArchiveIOTestCases
 
 class TestZipFS(fs.test.FSTestCases, unittest.TestCase):
 
@@ -31,7 +32,10 @@ class TestZipFS(fs.test.FSTestCases, unittest.TestCase):
         del self.tempfile
 
 
-class TestZipReadFS(ArchiveTestCases, unittest.TestCase):
+class TestZipReadFS(ArchiveReadTestCases, unittest.TestCase):
+
+    def make_source_fs(self):
+        return fs.memoryfs.MemoryFS()
 
     def compress(self, handle, source_fs):
         with zipfile.ZipFile(handle, 'w') as zipf:
@@ -66,89 +70,64 @@ class TestZipReadFS(ArchiveTestCases, unittest.TestCase):
 
 
 
-class TestZipFSIO(unittest.TestCase):
+class TestZipFSIO(unittest.TestCase, ArchiveIOTestCases):
 
-    def make_archive(self, handle):
-        with zipfile.ZipFile(handle, 'w') as z:
-            z.writestr('foo.txt', 'Hello World !')
-            z.writestr('egg/', '')
-            z.writestr('baz/bar.txt', 'Savy ?')
+    _archive_fs = fs.archive.zipfs.ZipFS
 
+    @staticmethod
+    def make_source_fs():
+        return fs.memoryfs.MemoryFS()
+
+    @staticmethod
+    def load_archive(handle):
+        return fs.archive.zipfs.ZipFS(handle)
+
+    @staticmethod
+    def compress(handle, source_fs):
         if hasattr(handle, 'seek') and handle.seekable():
             handle.seek(0)
+        saver = fs.archive.zipfs.ZipSaver(handle, False)
+        saver.to_stream(source_fs)
 
-        return handle
-
-    def list_files(self, handle):
+    @staticmethod
+    def iter_files(handle):
         if hasattr(handle, 'seek') and handle.seekable():
             handle.seek(0)
         with zipfile.ZipFile(handle) as z:
-            return {abspath(name).rstrip('/') for name in z.namelist()}
+            for name in z.namelist():
+                if not name.endswith('/') and name:
+                    yield abspath(name)
 
-    def _test_read(self, fs):
-        self.assertEqual(set(fs.listdir('/')), {'foo.txt', 'egg', 'baz'})
-        self.assertEqual(fs.gettext('foo.txt'), 'Hello World !')
-        self.assertTrue(fs.isdir('egg'))
+    @staticmethod
+    def iter_dirs(handle):
+        zipname = lambda n: abspath(n).rstrip('/')
+        seen = set()
 
-    def _test_read_write(self, fs):
-        self._test_read(fs)
-        self._test_write(fs)
+        if hasattr(handle, 'seek') and handle.seekable():
+            handle.seek(0)
 
-    def _test_write(self, fs):
-        fs.touch('ham.txt')
-        fs.makedirs('/spam/qux')
-        fs.touch('/spam/boom.txt')
+        with zipfile.ZipFile(handle) as z:
 
-        if fs.isfile('foo.txt'):
-            fs.remove('foo.txt')
-        if fs.isdir('egg'):
-            fs.removedir('egg')
+            namelist = z.namelist()
 
-        self.assertTrue(fs.isdir('spam/qux'))
-        self.assertTrue(fs.isfile('spam/boom.txt'))
-        self.assertFalse(fs.isdir('egg') or fs.exists('egg'))
+            for name in namelist:
 
-    def test_read_stream(self):
-        stream = self.make_archive(io.BytesIO())
-        with fs.archive.zipfs.ZipFS(io.BufferedReader(stream)) as zipfs:
-            self._test_read(zipfs)
-        self.assertEqual(self.list_files(stream),
-            {'/egg', '/foo.txt', '/baz/bar.txt'})
+                if name.endswith('/'):
+                    seen.add(name)
+                    yield zipname(name)
 
-    def test_read_write_stream(self):
-        stream = self.make_archive(io.BytesIO())
-        with fs.archive.zipfs.ZipFS(stream) as zipfs:
-            self._test_read_write(zipfs)
-        self.assertEqual(self.list_files(stream),
-            {'/ham.txt', '/spam/boom.txt', '/spam/qux', '/baz/bar.txt'})
+                else:
 
-    def test_write_stream(self):
-        stream = io.BytesIO()
-        stream.readable = lambda: False   # mock a write-only stream
+                    for path in recursepath(name):
+                        if not path in '/' and path != abspath(name):
+                            if not path in seen:
+                                seen.add(path)
+                                yield zipname(path)
 
-        with fs.archive.zipfs.ZipFS(stream) as zipfs:
-            self._test_write(zipfs)
 
-        self.assertEqual(self.list_files(stream),
-             {'/ham.txt', '/spam/boom.txt', '/spam/qux'})
-
-    def test_read_file(self):
-        filename = self.make_archive(tempfile.mktemp())
-        with fs.archive.zipfs.ZipFS(filename) as zipfs:
-            self._test_read(zipfs)
-        self.assertEqual(self.list_files(filename),
-            {'/egg', '/foo.txt', '/baz/bar.txt'})
-
-    def test_read_write_file(self):
-        filename = self.make_archive(tempfile.mktemp())
-        with fs.archive.zipfs.ZipFS(filename) as zipfs:
-            self._test_read_write(zipfs)
-        self.assertEqual(self.list_files(filename),
-            {'/ham.txt', '/spam/boom.txt', '/spam/qux', '/baz/bar.txt'})
-
-    def test_write_file(self):
-        filename = tempfile.mktemp()
-        with fs.archive.zipfs.ZipFS(filename) as zipfs:
-            self._test_write(zipfs)
-        self.assertEqual(self.list_files(filename),
-             {'/ham.txt', '/spam/boom.txt', '/spam/qux'})
+            # for name in name:
+            #     for path in recursepath(name):
+            #         if not path in '/' and not relpath(path) in namelist:
+            #             if not path in seen:
+            #                 seen.add(path)
+            #                 yield zipname(path)
