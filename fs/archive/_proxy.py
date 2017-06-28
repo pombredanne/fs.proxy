@@ -17,6 +17,8 @@ from ..tempfs import TempFS
 from ..wrapfs import WrapFS
 from ..memoryfs import MemoryFS
 
+from . import _utils
+
 
 class WrapProxyWriterMeta(abc.ABCMeta):
     """Make class use ``FS`` method implementation regardless of their bases.
@@ -61,9 +63,6 @@ class WrapProxyWriter(WrapFS):
         """Move the entry at the given ``path`` to the proxy FS.
         """
         self._proxy.makedirs(dirname(path), recreate=True)
-        # if self.delegate_fs().isdir(path):
-        #     copy_dir(self.delegate_fs(), path, self._proxy, path)
-        # else:
         copy_file(self.delegate_fs(), path, self._proxy, path)
         self._removed.add(path)
 
@@ -166,7 +165,7 @@ class WrapProxyWriter(WrapFS):
             content.extend(f for f in self.delegate_fs().listdir(_path)
                            if not join(_path, f) in self._removed)
 
-        return list(set(content))
+        return list(_utils.unique(content))
 
     def getinfo(self, path, namespaces=None):
         _path = self.validatepath(path)
