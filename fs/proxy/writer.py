@@ -1,3 +1,4 @@
+# coding: utf-8
 
 import abc
 import six
@@ -19,31 +20,12 @@ from ..wrapfs import WrapFS
 from ..memoryfs import MemoryFS
 
 from . import _utils
-
-
-class WrapProxyWriterMeta(abc.ABCMeta):
-    """Prevent the wrapped class from using `WrapFS` implementations.
-
-    With this metaclass, the `WrapProxyWriter` methods use any other
-    available implementation , falling back to `WrapFS` in last resort.
-    This prevents the wrapper from directly using the delegate filesystem
-    methods, and instead forces it to use `FS` implementations that rely
-    on the *essential* methods, which have been implemented.
-    """
-
-    def __new__(cls, name, bases, attrs):
-        _bases = bases + (FS,)
-        for base in _bases:
-            if base is not WrapFS:
-                for k,v in vars(base).items():
-                    if callable(v):
-                        attrs.setdefault(k, v)
-        return super(WrapProxyWriterMeta, cls).__new__(cls, name, bases, attrs)
+from .base import Proxy
 
 
 
-@six.add_metaclass(WrapProxyWriterMeta)
-class WrapProxyWriter(WrapFS):
+
+class ProxyWriter(Proxy):
     """A wrapper that makes a read-only FS writable with a proxy filesystem.
 
     Uses a temporary filesystem to handle the changes within the
@@ -52,19 +34,19 @@ class WrapProxyWriter(WrapFS):
 
     """
 
-    def __init__(self, wrap_fs=None, proxy=None, close=True):
-        """Create a new WrapProxyWriter instance.
+    def __init__(self, wrap_fs=None, proxy_fs=None, close=True):
+        """Create a new ProxyWriter instance.
 
         Parameters:
             wrap_fs (FS): The read_only filesystem to wrap. If None given,
                 the wrapper will behave exactly as its proxy filesystem alone.
-            proxy (FS): The proxy filesystem. If None given, uses a
+            proxy_fs (FS): The proxy filesystem. If None given, uses a
                 `TempFS` instance. *Must be writable.*
-            close (bool): Close the read_only filesystem when the wrapper
+            close (bool): Close the wrapped filesystem when the wrapper
                 is closed.
         """
-        super(WrapProxyWriter, self).__init__(wrap_fs or MemoryFS())
-        self._proxy = open_fs(proxy or 'temp://__proxy__', writeable=True)
+        super(ProxyWriter, self).__init__(wrap_fs or MemoryFS())
+        self._proxy_fs = open_fs(proxy_fs or 'temp://__proxy__', writeable=True)
         self._removed = set()
         self._close_ro = close
 
@@ -76,13 +58,14 @@ class WrapProxyWriter(WrapFS):
         return "{}(r={!r}|w={!r})".format(
             self.__class__.__name__,
             self.delegate_fs(),
-            self._proxy
+            self.proxy_fs()
         )
 
     def __str__(self):
-        return "<{} '{}'>".format(
+        return "<{} '{}'|'{}'>".format(
             self.__class__.__name__.lower(),
-            self.delegate_fs()
+            self.delegate_fs(),
+            self.proxy_fs()
         )
 
     def _on_wrapped_only(self, path):
@@ -93,7 +76,7 @@ class WrapProxyWriter(WrapFS):
             * it has not been removed
         """
         return self.delegate_fs().exists(path) \
-           and not self._proxy.exists(path) \
+           and not self.proxy_fs().exists(path) \
            and not path in self._removed
 
     def _relocate(self, path):
@@ -105,13 +88,24 @@ class WrapProxyWriter(WrapFS):
             chances the copy will be more optimized than reading/writing
             two file objects.
         """
-        self._proxy.makedirs(dirname(path), recreate=True)
-        copy_file(self.delegate_fs(), path, self._proxy, path)
+        self.proxy_fs().makedirs(dirname(path), recreate=True)
+        copy_file(self.delegate_fs(), path, self.proxy_fs(), path)
         self._removed.add(path)
+
+    def getmeta(self, namespace='standard'):
+        meta = self.delegate_fs().getmeta(namespace=namespace)
+        if namespace == 'standard':
+            meta.setdefault('invalid_path_chars', '\0')
+            meta['read_only'] = False
+        return meta
+
+    def proxy_fs(self):
+        self.check()
+        return self._proxy_fs
 
     def exists(self, path):
         _path = self.validatepath(path)
-        if self._proxy.exists(_path):
+        if self.proxy_fs().exists(_path):
             return True
         elif self.delegate_fs().exists(_path):
             return not _path in self._removed
@@ -128,9 +122,9 @@ class WrapProxyWriter(WrapFS):
         if not self.exists(parent) and parent not in '/':
             raise errors.ResourceNotFound(path)
 
-        self._proxy.makedirs(_path, recreate=True)
+        self.proxy_fs().makedirs(_path, recreate=True)
 
-        return self._proxy.opendir(_path)
+        return self.opendir(_path)
 
     def remove(self, path):
         _path = self.validatepath(path)
@@ -138,8 +132,8 @@ class WrapProxyWriter(WrapFS):
         if not self.exists(_path):
             raise errors.ResourceNotFound(path)
 
-        if self._proxy.exists(_path):
-            self._proxy.remove(_path)
+        if self.proxy_fs().exists(_path):
+            self.proxy_fs().remove(_path)
 
         self._removed.add(_path)
 
@@ -151,8 +145,8 @@ class WrapProxyWriter(WrapFS):
         elif not self.isempty(_path):
             raise errors.DirectoryNotEmpty(path)
 
-        if self._proxy.exists(_path):
-            self._proxy.removedir(_path)
+        if self.proxy_fs().exists(_path):
+            self.proxy_fs().removedir(_path)
 
         self._removed.add(_path)
 
@@ -167,7 +161,7 @@ class WrapProxyWriter(WrapFS):
             if not self.exists(_path):
                 raise errors.ResourceNotFound(path)
 
-            if not self._proxy.exists(_path):
+            if not self.proxy_fs().exists(_path):
                 return self.delegate_fs().openbin(_path, mode, buffering, **options)
 
         elif not _mode.truncate:
@@ -175,21 +169,21 @@ class WrapProxyWriter(WrapFS):
                 self._relocate(_path)
 
         if self.delegate_fs().exists(dirname(_path)):
-            self._proxy.makedirs(dirname(_path), recreate=True)
+            self.proxy_fs().makedirs(dirname(_path), recreate=True)
 
-        return self._proxy.openbin(_path, mode, buffering, **options)
+        return self.proxy_fs().openbin(_path, mode, buffering, **options)
 
     def setinfo(self, path, info):
         _path = self.validatepath(path)
         if not self.exists(_path):
             raise errors.ResourceNotFound(path)
 
-        if self._proxy.exists(_path):
-            self._proxy.setinfo(_path, info)
+        if self.proxy_fs().exists(_path):
+            self.proxy_fs().setinfo(_path, info)
         elif self.delegate_fs().exists(_path):
-            self._proxy.makedirs(dirname(_path), recreate=True)
-            copy_file(self.delegate_fs(), _path, self._proxy, _path)
-            self._proxy.setinfo(_path, info)
+            self.proxy_fs().makedirs(dirname(_path), recreate=True)
+            copy_file(self.delegate_fs(), _path, self.proxy_fs(), _path)
+            self.proxy_fs().setinfo(_path, info)
 
     def listdir(self, path):
         _path = self.validatepath(path)
@@ -201,8 +195,8 @@ class WrapProxyWriter(WrapFS):
         if not self.isdir(_path):
             raise errors.DirectoryExpected(path)
 
-        if self._proxy.exists(_path):
-            content.extend(self._proxy.listdir(_path))
+        if self.proxy_fs().exists(_path):
+            content.extend(self.proxy_fs().listdir(_path))
 
         if self.delegate_fs().exists(_path):
             content.extend(f for f in self.delegate_fs().listdir(_path)
@@ -214,15 +208,15 @@ class WrapProxyWriter(WrapFS):
         _path = self.validatepath(path)
         if not self.exists(_path):
             raise errors.ResourceNotFound(_path)
-        elif self._proxy.exists(_path):
-            return self._proxy.getinfo(_path, namespaces)
+        elif self.proxy_fs().exists(_path):
+            return self.proxy_fs().getinfo(_path, namespaces)
         else:
             return self.delegate_fs().getinfo(_path, namespaces)
 
     def close(self):
         if not self.isclosed():
-            super(WrapProxyWriter, self).close()
-            self._proxy.close()
+            super(ProxyWriter, self).close()
+            self.proxy_fs().close()
             if self._close_ro:
                 self.delegate_fs().close()
 
@@ -231,8 +225,8 @@ class WrapProxyWriter(WrapFS):
         return super(WrapFS, self).validatepath(path)
 
 
-class WrapSwapProxyWriter(WrapProxyWriter):
-    """Similar to `WrapProxyWriter`, but with a dynamic proxy.
+class SwapWriter(ProxyWriter):
+    """Similar to `ProxyWriter`, but with a dynamic proxy.
 
     The wrapper starts with a MemoryFS, but if the available memory
     on the system becomes low, it will swap automatically to a
@@ -267,7 +261,7 @@ class WrapSwapProxyWriter(WrapProxyWriter):
         """The sum of the proxy filesystem files sizes.
         """
         memory_usage = 0
-        for _, info in self._proxy.walk.info(namespaces=("details")):
+        for _, info in self.proxy_fs().walk.info(namespaces=("details")):
             memory_usage += info.size or 0
         return memory_usage
 
@@ -282,16 +276,16 @@ class WrapSwapProxyWriter(WrapProxyWriter):
 
         The in-memory proxy filesystem is closed after the copy.
         """
-        if self._proxy is not self._swap_fs:
-            _proxy, self._proxy = self._proxy, self._swap_fs
-            copy_fs(_proxy, self._proxy)
+        if self.proxy_fs() is not self._swap_fs:
+            _proxy, self.proxy_fs() = self.proxy_fs(), self._swap_fs
+            copy_fs(_proxy, self.proxy_fs())
             _proxy.close()
             del _proxy
 
     def close(self):
         if not self.isclosed():
-            super(WrapProxyWriter, self).close()
-            self._proxy.close()
+            super(ProxyWriter, self).close()
+            self.proxy_fs().close()
             self._swap_fs.close()
             if self._close_ro:
                 self.delegate_fs().close()
