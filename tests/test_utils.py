@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from __future__ import absolute_import
 
+import six
 import sys
 import unittest
 import importlib
@@ -16,7 +17,7 @@ class TestUnique(unittest.TestCase):
     def _test_unique(self, unique):
         self.assertEqual(list(unique('AAABBCCCCDD')), list('ABCD'))
         self.assertEqual(list(unique('AaAABbCCCDd')), list('AaBbCDd'))
-        self.assertEqual(list(unique('AaBbcCDd', key=str.lower)), list('ABcD'))
+        self.assertEqual(list(unique('AaBbcCDd', key=six.text_type.lower)), list('ABcD'))
 
     def setUp(self):
         sys.modules.pop('fs.proxy._utils')
