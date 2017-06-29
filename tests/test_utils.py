@@ -20,7 +20,8 @@ class TestUnique(unittest.TestCase):
 
     def setUp(self):
         sys.modules.pop('fs.proxy._utils')
-        sys.modules.pop('tlz.itertoolz')
+        if utils.itertoolz is not None:
+            sys.modules.pop('tlz.itertoolz')
 
     @unittest.skipIf(utils.itertoolz is None, "itertoolz not available")
     def test_tlz_unique(self):

@@ -20,7 +20,7 @@ before_install:
 - pip install -r tests/requirements.txt
 
 install:
-- if [[ $TRAVIS_PYTHON_VERSION != 3.6 ]]; then pip install . ; fi
+- pip install .
 
 script:
 - green
