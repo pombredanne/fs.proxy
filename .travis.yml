@@ -16,15 +16,11 @@ matrix:
   - python: pypy
   - python: pypy-5.3.1
 
-before_install:
-- pip install -Ur tests/requirements.txt
-- pip install -r requirements.txt
-
 install:
-- if [[ $TRAVIS_PYTHON_VERSION != 3.6 ]]; then pip install .; fi
+- pip install .
 
 script:
-- green
+- python setup.py test
 
 after_script:
 - codecov
