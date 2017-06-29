@@ -12,7 +12,7 @@ import fs.test
 import fs.wrap
 import fs.memoryfs
 import fs.tempfs
-import fs.archive._proxy
+import fs.proxy.writer
 
 from .utils import mock
 
@@ -21,7 +21,7 @@ class TestWrapProxyWriter(fs.test.FSTestCases, unittest.TestCase):
 
     def make_fs(self):
         mem = fs.memoryfs.MemoryFS()
-        f = fs.archive._proxy.WrapProxyWriter(fs.wrap.WrapReadOnly(mem))
+        f = fs.proxy.writer.WrapProxyWriter(fs.wrap.WrapReadOnly(mem))
         f.mem = mem
         return f
 
@@ -105,7 +105,7 @@ class TestWrapSwapProxyWriter(TestWrapProxyWriter, unittest.TestCase):
 
     def make_fs(self):
         mem = fs.memoryfs.MemoryFS()
-        f = fs.archive._proxy.WrapSwapProxyWriter(fs.wrap.WrapReadOnly(mem))
+        f = fs.proxy.writer.WrapSwapProxyWriter(fs.wrap.WrapReadOnly(mem))
         f.mem = mem
         return f
 
