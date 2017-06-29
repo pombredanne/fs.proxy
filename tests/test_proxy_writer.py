@@ -100,7 +100,6 @@ class TestProxyWriter(fs.test.FSTestCases, unittest.TestCase):
         del fs
 
 
-@unittest.skip("not working for now.")
 class TestSwapWriter(TestProxyWriter, unittest.TestCase):
 
     def make_fs(self):

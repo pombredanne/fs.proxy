@@ -100,7 +100,6 @@ class ProxyWriter(Proxy):
         return meta
 
     def proxy_fs(self):
-        self.check()
         return self._proxy_fs
 
     def exists(self, path):
@@ -248,10 +247,10 @@ class SwapWriter(ProxyWriter):
     """
     MEMORY_USAGE_LIMIT = psutil.virtual_memory().total / 2
 
-    def __init__(self, wrap_fs=None, swap_fs=None, close=True):
-        super(WrapSwapProxyWriter, self).__init__(
+    def __init__(self, wrap_fs=None, proxy_fs=None, swap_fs=None, close=True):
+        super(SwapWriter, self).__init__(
             wrap_fs or MemoryFS(),
-            proxy=MemoryFS(),
+            proxy_fs=proxy_fs or MemoryFS(),
             close=close,
         )
         self._swap_fs = open_fs(swap_fs or 'temp://__swap__', writeable=True)
@@ -260,16 +259,22 @@ class SwapWriter(ProxyWriter):
     def memory_usage(self):
         """The sum of the proxy filesystem files sizes.
         """
+        self.__checking_memory_usage = True
         memory_usage = 0
         for _, info in self.proxy_fs().walk.info(namespaces=("details")):
             memory_usage += info.size or 0
+
+        del self.__checking_memory_usage
         return memory_usage
 
     def check(self):
-        super(WrapSwapProxyWriter, self).check()
+        super(SwapWriter, self).check()
 
-        if self.memory_usage > self.MEMORY_USAGE_LIMIT:
-            self.swap()
+        if not getattr(self, '__checking_memory_usage', False):
+            if self.memory_usage > self.MEMORY_USAGE_LIMIT:
+                self.swap()
+
+
 
     def swap(self):
         """Replace the current proxy with the backup proxy.
@@ -277,7 +282,7 @@ class SwapWriter(ProxyWriter):
         The in-memory proxy filesystem is closed after the copy.
         """
         if self.proxy_fs() is not self._swap_fs:
-            _proxy, self.proxy_fs() = self.proxy_fs(), self._swap_fs
+            _proxy, self._proxy_fs = self.proxy_fs(), self._swap_fs
             copy_fs(_proxy, self.proxy_fs())
             _proxy.close()
             del _proxy

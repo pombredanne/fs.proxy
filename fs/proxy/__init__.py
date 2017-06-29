@@ -15,14 +15,13 @@ is only as tough as implementing a plain filesystem.
 __license__ = "MIT"
 __copyright__ = "Copyright (c) 2017 Martin Larralde"
 __author__ = "Martin Larralde"
+__version__ = 'dev'
 
-# Dynamically get the version
+# Dynamically get the version of the installed module
 try:
     import pkg_resources
     __version__ = pkg_resources.get_distribution(__name__).version
 except Exception:
-    pkg_resources
-else:
-    __version__ = 'dev'
+    pkg_resources = None
 finally:
     del pkg_resources

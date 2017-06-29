@@ -1,13 +1,8 @@
 # coding: utf-8
 """Proxy filesystem base class.
 """
-
-
 import abc
 import six
-import psutil
-import itertools
-import functools
 
 from ..base import FS
 from ..wrapfs import WrapFS
@@ -27,15 +22,16 @@ class ProxyMeta(abc.ABCMeta):
 
     def __new__(cls, name, bases, attrs):
         _bases = bases + (FS,)
+        exclude = ('__init__',)
         for base in _bases:
             if base is not WrapFS:
                 for k,v in vars(base).items():
-                    if callable(v):
+                    if callable(v) and k not in exclude:
                         attrs.setdefault(k, v)
-        return super(WrapProxyWriterMeta, cls).__new__(cls, name, bases, attrs)
+        return super(ProxyMeta, cls).__new__(cls, name, bases, attrs)
 
 
-@six.add_metaclass(WrapProxyWriterMeta)
+@six.add_metaclass(ProxyMeta)
 class Proxy(WrapFS):
     """A proxy filesystem.
 
@@ -67,6 +63,8 @@ class Proxy(WrapFS):
 
     """
 
-    @abstractmethod
+
+
+    @abc.abstractmethod
     def proxy_fs(self):
         return NotImplemented
