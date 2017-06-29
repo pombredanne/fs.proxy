@@ -3,8 +3,8 @@ fs.proxy
 
 |Source| |PyPI| |Travis| |Codecov| |Codacy| |Format| |License|
 
-.. |Codacy| image:: https://img.shields.io/codacy/grade/9734bea6ec004cc4914a377d9e9f54bd/master.svg?style=flat-square&maxAge=300
-   :target: https://www.codacy.com/app/althonos/fs-proxy/dashboard
+.. |Codacy| image:: https://img.shields.io/codacy/grade/6c923611c7fd49809cfe58a4d2e131ce/master.svg?style=flat-square&maxAge=300
+   :target: https://www.codacy.com/app/althonos/fs.proxy/dashboard
 
 .. |Travis| image:: https://img.shields.io/travis/althonos/fs.proxy/master.svg?style=flat-square&maxAge=300
    :target: https://travis-ci.org/althonos/fs.proxy/branches
