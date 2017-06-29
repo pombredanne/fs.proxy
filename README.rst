@@ -102,13 +102,13 @@ the root:
 
    >>> import fs.proxy.writer
 
-   >>> read_only_fs = fs.open_fs('/') # this is not actually read-only ;)
+   >>> read_only_fs = fs.open_fs(u'/') # this is not actually read-only ;)
    >>> writeable_fs = fs.proxy.writer.ProxyWriter(read_only_fs)
-   >>> writeable_fs.settext('/root.txt', 'I am writing in root !')
+   >>> writeable_fs.setbytes(u'/root.txt', b'I am writing in root !')
 
-   >>> writeable_fs.exists('/root.txt')
+   >>> writeable_fs.exists(u'/root.txt')
    True
-   >>> read_only_fs.exists('/root.txt')
+   >>> read_only_fs.exists(u'/root.txt')
    False
 
 
