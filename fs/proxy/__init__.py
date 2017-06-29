@@ -9,12 +9,9 @@ than that will behave like `fs.base.FS`. Implementing a `fs.proxy.Proxy`
 is only as tough as implementing a plain filesystem.
 """
 
-# Copyright (c) 2017 Martin Larralde
-# coding: utf-8
-
 __license__ = "MIT"
 __copyright__ = "Copyright (c) 2017 Martin Larralde"
-__author__ = "Martin Larralde"
+__author__ = "Martin Larralde <martin.larralde@ens-cachan.fr>"
 __version__ = 'dev'
 
 # Dynamically get the version of the installed module
