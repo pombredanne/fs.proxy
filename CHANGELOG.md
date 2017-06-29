@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - README, COPYING and CHANGELOG files
+- configuration for Travis-CI
 - `setup.py` file configured with `setup.cfg` (requires setuptools)
 - Base proxy classes in `fs.proxy.base`
 - Writer proxy classes in `fs.proxy.writer`, making read-only filesystem

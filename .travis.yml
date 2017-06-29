@@ -1,0 +1,33 @@
+sudo: false
+language: python
+cache: pip
+
+python:
+- 2.7
+- 3.3
+- 3.4
+- 3.5
+- 3.6
+- pypy
+- pypy-5.3.1
+
+matrix:
+  allow_failures:
+  - python: pypy
+  - python: pypy-5.3.1
+
+before_install:
+- pip install tests/requirements.txt
+
+install:
+- if [[ $TRAVIS_PYTHON_VERSION != 3.6 ]]; then pip install . ; fi
+
+script:
+- green
+
+after_script:
+- codecov
+
+notifications:
+  email:
+  - althonosdev@gmail.com
