@@ -28,6 +28,10 @@ script:
 after_script:
 - codecov
 
+before_deploy:
+# Check the readme doesn't contain errors
+- $(exit $(python setup.py check --restructuredtext 2>&1 | grep 'warning' -c >&1))
+
 deploy:
   provider: pypi
   user: althonos
