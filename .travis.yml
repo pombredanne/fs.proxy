@@ -28,6 +28,17 @@ script:
 after_script:
 - codecov
 
+deploy:
+  provider: pypi
+  user: althonos
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
+    repo: althonos/fs.proxy
+    python: 3.6
+  password:
+    secure: DcwViBIYz9YdgDqsOJrBPUKcTP5DOWH169RJV34jitGkcwauYwafFZxfHgFSOqoA3eQv8iuC31Vinr4mvpUqIX4wmn+qEqSjdNxBReyXjrpwBvXvKZX6StjcurXXFNVIdyxY58SBX7vyyDnLLRC+QmBBsu0BtMiIThzxAA5cupb6Nqs6IQCHBQBokcTm1fMLy9d7h1bwN8w8Xdy8IySzuESdnWQSJPq8kDM3c2+vEDq+dJ9z225k3DB4wgv6m3nyjamQkMm1P03GwEemAmwgD68mFAqUUlrVRWfeBQTnipJeAOLl5kM8gZNei/dPoXu1uu5KHurf4HhxytTFehMrZEA9O1kIs2ICOvL8VPCbncdcMuZaY3sW9v0jHeSpN5feFnix7g3wr0pxGeQMeYBVDZtq92gtYSXxIysJY9RweGDdSTiJTb7UdlCIcz2H+0UQC+nwJSzxGcnGwtUuh60dkt1E29UaDnJ+RepgM4ZhUU+WPa6VJw8Gqd8YHSK8qKiQP5YaysftdaTB+muv0i4Kp8oyKBVhU6qZBt6YzkMxUw4CBENaq1w+tGM9388LHtogNxUGBZGo80QKe1z242ER/2/07TNsDiCqTvX1E0QVIhFLjsQpIKmv8KNV29bgHtzoRxbQzvDY0n5I2SeJnsiir2UmOJebxCgn8yX4oKC0LMw=
+
 notifications:
   email:
   - althonosdev@gmail.com
