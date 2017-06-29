@@ -5,22 +5,14 @@ Filesystem defined in this module provide a writable view to a read-only
 filesystem, copying files only when a modification is requested to lower
 the memory / storage footprint.
 """
-import abc
 import six
 import psutil
-import itertools
-import functools
 
 from .. import errors
-from .. import iotools
-
-from ..base import FS
 from ..mode import Mode
-from ..copy import copy_file, copy_dir, copy_fs
+from ..copy import copy_file, copy_fs
 from ..path import dirname, relpath, join
-from ..tools import get_intermediate_dirs
 from ..opener import open_fs
-from ..tempfs import TempFS
 from ..wrapfs import WrapFS
 from ..memoryfs import MemoryFS
 
@@ -225,7 +217,7 @@ class ProxyWriter(Proxy):
 
     def validatepath(self, path):  # noqa: D102
         self.check()
-        return super(WrapFS, self).validatepath(path)
+        return super(ProxyWriter, self).validatepath(path)
 
 
 class SwapWriter(ProxyWriter):
@@ -291,7 +283,7 @@ class SwapWriter(ProxyWriter):
 
     def close(self):  # noqa: D102
         if not self.isclosed():
-            super(ProxyWriter, self).close()
+            super(SwapWriter, self).close()
             self.proxy_fs().close()
             self._swap_fs.close()
             if self._close_ro:

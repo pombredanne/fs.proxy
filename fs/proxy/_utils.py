@@ -27,4 +27,4 @@ except ImportError:
                     yield element
 
 
-__all__ = ["unique_everseen"]
+__all__ = ["unique"]

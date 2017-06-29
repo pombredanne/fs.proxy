@@ -20,7 +20,7 @@ class ProxyMeta(abc.ABCMeta):
     implemented.
     """
 
-    def __new__(cls, name, bases, attrs): # noqa: D102,D105
+    def __new__(mcs, name, bases, attrs): # noqa: D102,D105
         _bases = bases + (FS,)
         exclude = ('__init__',)
         for base in _bases:
@@ -28,7 +28,7 @@ class ProxyMeta(abc.ABCMeta):
                 for k,v in vars(base).items():
                     if callable(v) and k not in exclude:
                         attrs.setdefault(k, v)
-        return super(ProxyMeta, cls).__new__(cls, name, bases, attrs)
+        return super(ProxyMeta, mcs).__new__(mcs, name, bases, attrs)
 
 
 @six.add_metaclass(ProxyMeta)
