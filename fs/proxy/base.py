@@ -20,7 +20,7 @@ class ProxyMeta(abc.ABCMeta):
     implemented.
     """
 
-    def __new__(cls, name, bases, attrs):
+    def __new__(cls, name, bases, attrs): # noqa: D102,D105
         _bases = bases + (FS,)
         exclude = ('__init__',)
         for base in _bases:
@@ -63,8 +63,8 @@ class Proxy(WrapFS):
 
     """
 
-
-
     @abc.abstractmethod
     def proxy_fs(self):
+        """Return the secondary filesystem used by the proxy.
+        """
         return NotImplemented

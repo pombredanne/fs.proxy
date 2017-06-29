@@ -1,5 +1,10 @@
 # coding: utf-8
+"""Proxy filesystem writer classes.
 
+Filesystem defined in this module provide a writable view to a read-only
+filesystem, copying files only when a modification is requested to lower
+the memory / storage footprint.
+"""
 import abc
 import six
 import psutil
@@ -23,8 +28,6 @@ from . import _utils
 from .base import Proxy
 
 
-
-
 class ProxyWriter(Proxy):
     """A wrapper that makes a read-only FS writable with a proxy filesystem.
 
@@ -44,6 +47,7 @@ class ProxyWriter(Proxy):
                 `TempFS` instance. *Must be writable.*
             close (bool): Close the wrapped filesystem when the wrapper
                 is closed.
+
         """
         super(ProxyWriter, self).__init__(wrap_fs or MemoryFS())
         self._proxy_fs = open_fs(proxy_fs or 'temp://__proxy__', writeable=True)
@@ -54,14 +58,14 @@ class ProxyWriter(Proxy):
         self._meta.setdefault('invalid_path_chars', '\0')
         self._meta['read_only'] = False
 
-    def __repr__(self):
+    def __repr__(self):  # noqa: D105
         return "{}(r={!r}|w={!r})".format(
             self.__class__.__name__,
             self.delegate_fs(),
             self.proxy_fs()
         )
 
-    def __str__(self):
+    def __str__(self):  # noqa: D105
         return "<{} '{}'|'{}'>".format(
             self.__class__.__name__.lower(),
             self.delegate_fs(),
@@ -92,17 +96,17 @@ class ProxyWriter(Proxy):
         copy_file(self.delegate_fs(), path, self.proxy_fs(), path)
         self._removed.add(path)
 
-    def getmeta(self, namespace='standard'):
+    def getmeta(self, namespace='standard'):  # noqa: D102
         meta = self.delegate_fs().getmeta(namespace=namespace)
         if namespace == 'standard':
             meta.setdefault('invalid_path_chars', '\0')
             meta['read_only'] = False
         return meta
 
-    def proxy_fs(self):
+    def proxy_fs(self):  # noqa: D102
         return self._proxy_fs
 
-    def exists(self, path):
+    def exists(self, path):  # noqa: D102
         _path = self.validatepath(path)
         if self.proxy_fs().exists(_path):
             return True
@@ -111,7 +115,7 @@ class ProxyWriter(Proxy):
         else:
             return False
 
-    def makedir(self, path, permissions=None, recreate=False):
+    def makedir(self, path, permissions=None, recreate=False):  # noqa: D102
         _path = relpath(self.validatepath(path))
 
         if self.exists(_path) and not recreate:
@@ -125,7 +129,7 @@ class ProxyWriter(Proxy):
 
         return self.opendir(_path)
 
-    def remove(self, path):
+    def remove(self, path):  # noqa: D102
         _path = self.validatepath(path)
 
         if not self.exists(_path):
@@ -136,7 +140,7 @@ class ProxyWriter(Proxy):
 
         self._removed.add(_path)
 
-    def removedir(self, path):
+    def removedir(self, path):  # noqa: D102
         _path = self.validatepath(path)
 
         if _path in '/':
@@ -149,7 +153,7 @@ class ProxyWriter(Proxy):
 
         self._removed.add(_path)
 
-    def openbin(self, path, mode='r', buffering=-1, **options):
+    def openbin(self, path, mode='r', buffering=-1, **options):  # noqa: D102
         _path = self.validatepath(path)
         _mode = Mode(mode)
 
@@ -172,7 +176,7 @@ class ProxyWriter(Proxy):
 
         return self.proxy_fs().openbin(_path, mode, buffering, **options)
 
-    def setinfo(self, path, info):
+    def setinfo(self, path, info):  # noqa: D102
         _path = self.validatepath(path)
         if not self.exists(_path):
             raise errors.ResourceNotFound(path)
@@ -184,7 +188,7 @@ class ProxyWriter(Proxy):
             copy_file(self.delegate_fs(), _path, self.proxy_fs(), _path)
             self.proxy_fs().setinfo(_path, info)
 
-    def listdir(self, path):
+    def listdir(self, path):  # noqa: D102
         _path = self.validatepath(path)
         content = []
 
@@ -203,7 +207,7 @@ class ProxyWriter(Proxy):
 
         return list(_utils.unique(content))
 
-    def getinfo(self, path, namespaces=None):
+    def getinfo(self, path, namespaces=None):  # noqa: D102
         _path = self.validatepath(path)
         if not self.exists(_path):
             raise errors.ResourceNotFound(_path)
@@ -212,14 +216,14 @@ class ProxyWriter(Proxy):
         else:
             return self.delegate_fs().getinfo(_path, namespaces)
 
-    def close(self):
+    def close(self):  # noqa: D102
         if not self.isclosed():
             super(ProxyWriter, self).close()
             self.proxy_fs().close()
             if self._close_ro:
                 self.delegate_fs().close()
 
-    def validatepath(self, path):
+    def validatepath(self, path):  # noqa: D102
         self.check()
         return super(WrapFS, self).validatepath(path)
 
@@ -245,9 +249,10 @@ class SwapWriter(ProxyWriter):
         using the swapped proxy after the swap.
 
     """
+
     MEMORY_USAGE_LIMIT = psutil.virtual_memory().total / 2
 
-    def __init__(self, wrap_fs=None, proxy_fs=None, swap_fs=None, close=True):
+    def __init__(self, wrap_fs=None, proxy_fs=None, swap_fs=None, close=True): # noqa: D102
         super(SwapWriter, self).__init__(
             wrap_fs or MemoryFS(),
             proxy_fs=proxy_fs or MemoryFS(),
@@ -257,8 +262,7 @@ class SwapWriter(ProxyWriter):
 
     @property
     def memory_usage(self):
-        """The sum of the proxy filesystem files sizes.
-        """
+        """int: Sum of sizes of the files on the proxy filesystem."""
         self.__checking_memory_usage = True
         memory_usage = 0
         for _, info in self.proxy_fs().walk.info(namespaces=("details")):
@@ -267,14 +271,12 @@ class SwapWriter(ProxyWriter):
         del self.__checking_memory_usage
         return memory_usage
 
-    def check(self):
+    def check(self):  # noqa: D102
         super(SwapWriter, self).check()
 
         if not getattr(self, '__checking_memory_usage', False):
             if self.memory_usage > self.MEMORY_USAGE_LIMIT:
                 self.swap()
-
-
 
     def swap(self):
         """Replace the current proxy with the backup proxy.
@@ -287,7 +289,7 @@ class SwapWriter(ProxyWriter):
             _proxy.close()
             del _proxy
 
-    def close(self):
+    def close(self):  # noqa: D102
         if not self.isclosed():
             super(ProxyWriter, self).close()
             self.proxy_fs().close()

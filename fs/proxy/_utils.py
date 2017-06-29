@@ -10,9 +10,9 @@ except ImportError:
 
     from six.moves import filterfalse
 
-    def unique(iterable, key=None): 
-        "Yield unique elements, preserving order."
-
+    def unique(iterable, key=None):
+        """Yield unique elements, preserving order.
+        """
         seen = set()
         seen_add = seen.add
         if key is None:

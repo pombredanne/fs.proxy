@@ -1,3 +1,6 @@
+"""Tests for fs.proxy.
+"""
+
 from __future__ import absolute_import
 
 from . import test_proxy_writer
