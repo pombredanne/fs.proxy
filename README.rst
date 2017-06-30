@@ -70,7 +70,7 @@ Requirements
 Installation
 ------------
 
-Install directly from PyPI, using `pip` ::
+Install directly from PyPI, using `pip <https://pip.pypa.io/>`_ ::
 
     pip install fs.proxy
 
@@ -79,12 +79,12 @@ Usage
 -----
 
 This module revolves around the notion of proxy filesystems, akin to wrapper
-filesystems from the core library, but using a `proxy` in combination with the
-`delegate` filesystem used by ``WrapFS``. They also make it easier to create generic
+filesystems from the core library, but using a *proxy* in combination with the
+*delegate* filesystem used by ``WrapFS``. They also make it easier to create generic
 wrappers, as ``fs.proxy.base.Proxy`` subclasses will use the ``fs.base.FS`` method
 implementation, while actually deriving from ``WrapFS`` !
 
-This extension includes a base ``fs.proxy.base.Proxy`` class, that can requires only the
+This extension includes a base ``fs.proxy.base.Proxy`` class, that requires only the
 `essential filesystem methods
 <https://pyfilesystem2.readthedocs.io/en/latest/implementers.html#essential-methods>`_
 to be implemented.
@@ -95,7 +95,7 @@ any read-only filesystem *writeable*, using a secondary writeable filesystem:
 will always write modifications to the secondary filesystem (often a ``MemoryFS`` or
 a ``TempFS``), while ``SwapWriter`` will use a third *backup* filesystem in case
 the memory footprint of the proxy filesystem becomes too large (swapping from a
-``MemoryFS`` to an ``OSFS``, for instance). For instance, pretend we can write to
+``MemoryFS`` to an ``OSFS``, etc.). For instance, let's pretend we can write to
 the root:
 
 .. code:: python
