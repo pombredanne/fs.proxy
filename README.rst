@@ -116,5 +116,7 @@ See also
 --------
 
 * `fs <https://github.com/Pyfilesystem/pyfilesystem2>`_, the core pyfilesystem2 library
+* `fs.archive <https://github.com/althonos/fs.archive>`_, enhanced archive filesystems
+  for pyfilesystem2
 * `fs.sshfs <https://github.com/althonos/fs.sshfs>`_, a SFTP/SSH implementation for
   pyfilesystem2 using `paramiko <https://github.com/paramiko/paramiko>`_
