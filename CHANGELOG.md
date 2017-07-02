@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Wrong super() argument in fs.proxy.writer
 - fs.proxy._utils.__all__ containing an undefined name cause by
   renaming of `unique_everseen` to unique
+- tested example in README.md failing in Python 2
+- requirements not installing on a wheel install
 
 ## [v0.1.1] - 2017-06-29
 ### Fixed
