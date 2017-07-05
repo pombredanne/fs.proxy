@@ -215,10 +215,6 @@ class ProxyWriter(Proxy):
             if self._close_ro:
                 self.delegate_fs().close()
 
-    def validatepath(self, path):  # noqa: D102
-        self.check()
-        return super(ProxyWriter, self).validatepath(path)
-
 
 class SwapWriter(ProxyWriter):
     """Similar to `ProxyWriter`, but with a dynamic proxy.
