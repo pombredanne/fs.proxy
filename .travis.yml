@@ -31,7 +31,7 @@ after_script:
 
 before_deploy:
 # Check the readme doesn't contain errors
-- $(exit $(python setup.py check --restructuredtext 2>&1 | grep 'warning' -c >&1))
+- python setup.py check -rms
 
 deploy:
   provider: pypi
