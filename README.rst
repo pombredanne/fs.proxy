@@ -120,3 +120,5 @@ See also
   for pyfilesystem2
 * `fs.sshfs <https://github.com/althonos/fs.sshfs>`_, a SFTP/SSH implementation for
   pyfilesystem2 using `paramiko <https://github.com/paramiko/paramiko>`_
+* `fs.smbfs <https://github.com/althonos/fs.smbfs>`_, Pyfilesystem2 over SMB
+  using pysmb
