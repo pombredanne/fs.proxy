@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.1.3] - 2017-08-16
+### Fixed
+- Bad version specifier for `fs` dependency
+### Removed
+- Redundant definition of the `fs.proxy.writer.ProxyWriter.validatepath`
+
 ## [v0.1.2] - 2017-07-03
 ### Added
 - Examples to README.rst
@@ -29,7 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Writer proxy classes in `fs.proxy.writer`, making read-only filesystem
 writeable through a proxy filesystem
 
-[Unreleased]: https://github.com/althonos/fs.proxy/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/althonos/fs.proxy/compare/v0.1.3...HEAD
+[vO.1.3]: https://github.com/althonos/fs.proxy/compare/v0.1.2...v0.1.3
 [vO.1.2]: https://github.com/althonos/fs.proxy/compare/v0.1.1...v0.1.2
 [vO.1.1]: https://github.com/althonos/fs.proxy/compare/v0.1.0...v0.1.1
-
