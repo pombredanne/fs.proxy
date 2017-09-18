@@ -17,17 +17,19 @@ matrix:
   - python: pypy-5.3.1
 
 before_install:
-- pip install -U setuptools wheel
+- pip install -U setuptools wheel docutils
 
 install:
 - pip install .
+
+before_script:
+- pip install -r tests/requirements.txt
 
 script:
 - python setup.py test
 
 after_script:
-#- codecov
-- bash <(curl -s https://codecov.io/bash)
+- codecov
 
 before_deploy:
 # Check the readme doesn't contain errors
