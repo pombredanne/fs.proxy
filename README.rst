@@ -1,5 +1,5 @@
-fs.proxy
-========
+``fs.proxy``
+============
 
 |Source| |PyPI| |Travis| |Codecov| |Codacy| |Format| |License|
 
